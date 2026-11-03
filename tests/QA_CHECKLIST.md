@@ -51,6 +51,7 @@
 - [ ] CI compiles both source files and passes updater metadata and SHA-256 unit tests.
 - [ ] Fresh v0.3.0 install has a visible CHECK FOR UPDATES button; manual click reports up-to-date when no newer stable release exists.
 - [ ] Startup GitHub API error, rate-limit, DNS failure and disconnected network do not interrupt using offline apps.
+- [ ] A public repository with zero Releases returns GitHub HTTP 404; automatic checks stay quiet, and manual check says no newer stable release (not an error).
 - [ ] On a test newer stable release with the exact full offline installer asset and SHA256 digest, the launcher prompts Yes/No before downloading.
 - [ ] No leaves installed files untouched; Cancel aborts a partial download without running anything.
 - [ ] Yes downloads full installer with progress; size or checksum mismatch stops the installation.

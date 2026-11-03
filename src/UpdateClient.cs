@@ -57,8 +57,8 @@ namespace VsiCreativeSuite
                 if (release == null)
                 {
                     if (manual)
-                        MessageBox.Show(owner, "VSI Creative Suite is up to date (v" +
-                            CurrentVersion + ").", "VSI Creative Suite",
+                        MessageBox.Show(owner, "No newer stable release is published on GitHub.\n" +
+                            "Current version: v" + CurrentVersion + ".", "VSI Creative Suite",
                             MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
@@ -106,10 +106,30 @@ namespace VsiCreativeSuite
             request.ReadWriteTimeout = 12000;
             request.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
             string body;
-            using (WebResponse response = request.GetResponse())
-            using (StreamReader reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8))
-                body = reader.ReadToEnd();
+            try
+            {
+                using (WebResponse response = request.GetResponse())
+                using (StreamReader reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8))
+                    body = reader.ReadToEnd();
+            }
+            catch (WebException ex)
+            {
+                // GitHub returns HTTP 404 for /releases/latest when a repository
+                // exists but has not published any stable Release yet.
+                HttpWebResponse http = ex.Response as HttpWebResponse;
+                if (http != null && IsNoReleaseStatus(http.StatusCode))
+                {
+                    http.Close();
+                    return null;
+                }
+                throw; // Network, permission and server errors are still real failures.
+            }
             return ParseRelease(body);
+        }
+
+        internal static bool IsNoReleaseStatus(HttpStatusCode status)
+        {
+            return status == HttpStatusCode.NotFound;
         }
 
         // Isolated parser makes update trust checks testable without Internet access.

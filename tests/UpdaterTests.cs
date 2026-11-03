@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Net;
 
 namespace VsiCreativeSuite
 {
@@ -32,6 +33,12 @@ namespace VsiCreativeSuite
         {
             try
             {
+                Check(SuiteUpdater.IsNoReleaseStatus(HttpStatusCode.NotFound),
+                    "GitHub 404 means there is no published latest release");
+                Check(!SuiteUpdater.IsNoReleaseStatus(HttpStatusCode.Forbidden),
+                    "HTTP 403 rate limit or permission error must not be hidden");
+                Check(!SuiteUpdater.IsNoReleaseStatus(HttpStatusCode.InternalServerError),
+                    "HTTP 500 must not be mistaken for an empty release list");
                 string hash = new string('a', 64);
                 string digest = "sha256:" + hash;
                 string url = "https://github.com/vsiphils/vsi-creative-suite/releases/download/v0.3.1/VSI-Creative-Suite-Setup-Win10-11-x64.exe";
