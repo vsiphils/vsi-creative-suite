@@ -1,0 +1,53 @@
+VSI CREATIVE SUITE - THIRD-PARTY SOFTWARE AND NOTICES
+====================================================
+
+Copyright (c) 2026 Vertical Space Interiors, Inc.
+The VSI Creative Suite launcher, its UI and company logo are VSI-branded.
+The applications launched by it remain independently authored third-party
+open-source products. VSI does not claim ownership of those applications.
+
+Bundled applications:
+
+Hew 3D
+  Source: https://github.com/hew3d/hew
+  License: AGPL-3.0 with upstream plugin exception
+
+PdfCraft
+  Source: https://github.com/storytold/pdfcraft
+  License: MIT OR Apache-2.0
+
+PhotoCraft
+  Source: https://github.com/storytold/photocraft
+  License: MIT OR Apache-2.0
+
+GridCraft
+  Source: https://github.com/storytold/gridcraft
+  License: MIT OR Apache-2.0
+
+WordCraft
+  Source: https://github.com/storytold/wordcraft
+  License: MIT OR Apache-2.0
+
+CADCraft
+  Source: https://github.com/storytold/cadcraft
+  License: MIT OR Apache-2.0
+
+Microsoft Edge WebView2 Runtime
+  Publisher: Microsoft Corporation
+  Information: https://developer.microsoft.com/en-us/microsoft-edge/webview2/
+  Distributed under Microsoft's own license terms.
+
+The full upstream license texts and notices downloaded at BUILD time are
+included in the installed "licenses" folder. Review them before company
+redistribution. The upstream ArtCraft name/logo are separate trademarks and
+have not been reused as VSI branding.
+
+The original product names (PdfCraft, PhotoCraft, GridCraft, WordCraft,
+CADCraft and Hew) identify their independent authors' software.
+
+No login, user telemetry, GitHub release check, or network request is
+implemented in the custom VSI launcher itself.
+
+An installed Hew application and the shared WebView2 Runtime are not removed
+when the VSI launcher is uninstalled, to avoid deleting separately installed
+software or breaking other applications.

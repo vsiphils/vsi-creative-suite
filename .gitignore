@@ -1,0 +1,11 @@
+/build/
+/output/
+/.vs/
+/.vscode/
+*.user
+*.suo
+*.log
+*.tmp
+*.bak
+*.zip
+*.exe
