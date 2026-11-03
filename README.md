@@ -1,6 +1,6 @@
 # VSI Creative Suite — Offline Windows Launcher
 
-Company-branded launcher for **Vertical Space Interiors, Inc.** with exactly six open-source tools:
+Company-branded launcher for **Vertical Space Interiors, Inc.** with six initial open-source tools:
 
 | Tile | Official project | How it is bundled |
 | --- | --- | --- |
@@ -11,11 +11,11 @@ Company-branded launcher for **Vertical Space Interiors, Inc.** with exactly six
 | WordCraft | https://github.com/storytold/wordcraft | Official Windows x64 portable ZIP |
 | CADCraft | https://github.com/storytold/cadcraft | Official Windows x64 portable ZIP |
 
-The custom launcher has no accounts, telemetry, webview, internet checks, third-party ads, or update buttons. The **COMPANY EDITION** button opens `https://vsiphils.com/` in the default browser only when clicked. Each **OPEN** button starts a local executable. If an app is missing, it says **MISSING**.
+The custom launcher has no accounts, telemetry, embedded browser, or third-party ads. On Windows 10/11, v0.3.0 makes a background check of the official public GitHub Releases API when opened, and the footer has a manual **CHECK FOR UPDATES** button. The launcher remains usable offline. The **COMPANY EDITION** button opens `https://vsiphils.com/` in the default browser only when clicked. Each **OPEN** button starts a local executable. If an app is missing, it says **MISSING**.
 
 ## Status
 
-**Version 0.2.1 source project.** The user successfully compiled version 0.1.0 and reported that all six apps run on their Windows PC. Version 0.2.0 had visible black square artifacts caused by separately painted WinForms child controls. Version 0.2.1 paints each complete app card (icon, labels, rounded button) directly on a single surface to prevent those backgrounds; a new Windows compile and offline acceptance test is still required before company-wide rollout.
+**Version 0.3.0 updater candidate (not yet a published installer).** This branch adds an update prompt, full-bundle download with GitHub asset SHA-256 verification, and a Windows compile/test workflow. The installed v0.2.1 launcher does not have an updater; v0.3.0 must be installed once manually. Existing offline launcher/card behavior should remain intact but still needs Windows 10/11 acceptance testing.
 
 ## Requirements to create the one-file offline installer
 
@@ -58,7 +58,26 @@ If this Windows build PC already has a complete `build\<date>\stage` folder from
 
 `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\repack.ps1`
 
-This recompiles the new `src\Program.cs` into the last downloaded stage and rebuilds the one-file offline installer. The generated installer replaces the previous same-named EXE in `output\`.
+This recompiles `src\Program.cs` and `src\UpdateClient.cs` into the last downloaded stage and rebuilds the one-file offline installer. **Important: repack.ps1 does not download new versions of the six apps.** For a release containing all newest upstream apps, use `build.ps1` on an internet-connected build machine.
+
+
+## VSI Creative Suite v0.3.0 updates (Windows 10/11 only)
+
+**Update prompt:** on startup (or when **CHECK FOR UPDATES** is clicked) the launcher queries the public GitHub Releases API in the background. If a newer stable suite release is found, it shows `VSI Creative Suite vX.Y.Z is available. Do you want to download and install the update?` with **Yes / No**. Choosing No never changes the installation. Choosing Yes downloads the **full offline suite installer** with progress, checks the exact asset size and SHA-256 digest against GitHub's release API, then starts the interactive installer. The user can cancel a download and the installed suite remains unchanged. Network errors do not block opening installed apps.
+
+**All bundled app updates:** the full-suite installer includes the exact versions captured in `release-lock.json`. To update **Hew + the five Craft apps** at the same time, always run `build.ps1` before publishing a new release; this builder fetches current upstream releases. A simple Git commit does not update installed users. The installed app does not separately reach upstream repositories. A newly added seventh app needs to be added to the launcher and the full build/packaging first; it will then arrive through the next suite release.
+
+**First-time migration:** v0.2.1 cannot self-update. Each PC must install updater-enabled v0.3.0 once; subsequent newer stable GitHub Releases can be detected automatically.
+
+**Release publishing checklist:**
+
+1. Update the three version values together: `SuiteUpdater.CurrentVersion` in `src/UpdateClient.cs`, `AppVersion` and `AppVerName` in `packaging/VsiCreativeSuite.iss` (plus the optional legacy installer). Increment to `0.3.1` or newer for the next release.
+2. Run the full one-line `build.ps1` command on the Windows build PC, **not repack.ps1**. Inspect `release-lock.json` to confirm which Hew/Craft versions are included.
+3. Test installation, app open/save, offline behavior and upgrade from the prior version on Windows 10 and 11 x64. Test cancellation and SHA mismatch handling.
+4. Publish a stable (not draft/prerelease) GitHub Release with tag `v0.3.0` and upload the resulting exact asset named `VSI-Creative-Suite-Setup-Win10-11-x64.exe`. Enable GitHub immutable releases where available.
+5. Confirm GitHub reports a `sha256:<64 hex>` asset digest. If absent, the updater refuses to install, as designed. Also check installer reputation/signing and anti-virus results before production.
+
+**Security:** the v0.3.0 prototype checks HTTPS, a fixed official GitHub asset URL, file length, SHA-256 and version. This detects corruption and mismatched downloads but **is not independent publisher authentication**: a compromised GitHub repository could replace metadata and binary together. For real company-wide rollout, sign the combined installer using VSI's trusted code-signing certificate and enforce the expected signer (or a separately signed release manifest) in the updater. Windows SmartScreen prompts are expected for unsigned binaries. Do not treat SHA-256 alone as equivalent to code signing or bypass Windows security dialogs.
 
 ## How installation works on Windows 10/11
 
@@ -95,6 +114,8 @@ This produces `VSI-Creative-Suite-Legacy-Launcher-Win7-8.exe` (UI only; no apps)
 ## Project layout
 
 - `src/Program.cs` — company-branded offline Windows Forms launcher
+- `src/UpdateClient.cs` — GitHub Releases updater, prompt, progress and SHA-256 verification
+- `tests/UpdaterTests.cs` — offline unit tests for update metadata and SHA-256 checks
 - `assets/vsi-logo.png` — original uploaded company logo, unchanged
 - `assets/vsi-logo.ico` — Windows icon generated from the uploaded logo
 - `build.ps1` — download, verify, stage, compile, bundle (Windows build PC only)
@@ -106,7 +127,7 @@ This produces `VSI-Creative-Suite-Legacy-Launcher-Win7-8.exe` (UI only; no apps)
 
 ## Ownership, license and update expectations
 
-VSI owns its **custom launcher branding and deployment configuration**, not the Hew or Craft applications. All upstream licenses and notices must remain included when distributing internally or externally; Hew's AGPL requirements require particular care if it is modified or distributed. The code does not alter or rebrand the third-party binaries. Versions are pinned in a build's `release-lock.json`, and updates require building and testing a new installer. The six tools are actively developed and several remain alpha-quality, so validate real company drawings, PSDs, PDFs, XLSX and DOCX before replacing paid tools.
+VSI owns its **custom launcher branding and deployment configuration**, not the Hew or Craft applications. All upstream licenses and notices must remain included when distributing internally or externally; Hew's AGPL requirements require particular care if it is modified or distributed. The code does not alter or rebrand the third-party binaries. Versions are pinned in a build's `release-lock.json`, and the updater downloads a newly published and approved full offline installer. Building and QA of each new suite installer are still required. The six tools are actively developed and several remain alpha-quality, so validate real company drawings, PSDs, PDFs, XLSX and DOCX before replacing paid tools.
 
 The launcher UI no longer shows a "Licenses & Credits" button; the upstream notices and attribution files are still packaged under the installation folder for legal compliance. Inno Setup 7 may require a commercial license for company use; verify this before broad deployment.
 

@@ -57,6 +57,7 @@ namespace VsiCreativeSuite
         private readonly Label subheading = new Label();
         private readonly Panel footer = new Panel();
         private bool companyHover;
+        private bool updateHover;
         private readonly string installRoot;
         private readonly bool modernWindows;
 
@@ -186,21 +187,50 @@ namespace VsiCreativeSuite
                 using (Font linkFont = new Font("Segoe UI", 9f, FontStyle.Bold))
                     TextRenderer.DrawText(e.Graphics, "COMPANY EDITION   ↗", linkFont, link,
                         Color.White, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+
+                Rectangle updateButton = UpdateLinkBounds();
+                using (GraphicsPath shape = UiShapes.Rounded(updateButton, 9))
+                using (SolidBrush fill = new SolidBrush(updateHover
+                    ? Color.FromArgb(42, 59, 54) : Color.FromArgb(27, 38, 38)))
+                using (Pen line = new Pen(updateHover
+                    ? Color.FromArgb(64, 190, 128) : Color.FromArgb(65, 100, 85), 1f))
+                {
+                    e.Graphics.FillPath(fill, shape);
+                    e.Graphics.DrawPath(line, shape);
+                }
+                using (Font updateFont = new Font("Segoe UI", 9f, FontStyle.Bold))
+                    TextRenderer.DrawText(e.Graphics, "CHECK FOR UPDATES", updateFont,
+                        updateButton, Color.FromArgb(112, 227, 160),
+                        TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
             };
             footer.MouseMove += delegate(object sender, MouseEventArgs e)
             {
                 bool hovering = CompanyLinkBounds().Contains(e.Location);
-                footer.Cursor = hovering ? Cursors.Hand : Cursors.Default;
-                if (hovering != companyHover) { companyHover = hovering; footer.Invalidate(); }
+                bool overUpdate = UpdateLinkBounds().Contains(e.Location);
+                footer.Cursor = hovering || overUpdate ? Cursors.Hand : Cursors.Default;
+                if (hovering != companyHover || overUpdate != updateHover)
+                {
+                    companyHover = hovering; updateHover = overUpdate; footer.Invalidate();
+                }
             };
             footer.MouseLeave += delegate
             {
-                if (companyHover) { companyHover = false; footer.Invalidate(); }
+                if (companyHover || updateHover)
+                {
+                    companyHover = false; updateHover = false; footer.Invalidate();
+                }
             };
             footer.MouseClick += delegate(object sender, MouseEventArgs e)
             {
-                if (e.Button == MouseButtons.Left && CompanyLinkBounds().Contains(e.Location))
+                if (e.Button != MouseButtons.Left) return;
+                if (CompanyLinkBounds().Contains(e.Location))
                     OpenCompanyWebsite();
+                else if (UpdateLinkBounds().Contains(e.Location))
+                {
+                    if (modernWindows) SuiteUpdater.Check(this, true);
+                    else MessageBox.Show(this, "Updates require Windows 10 or newer.",
+                        "VSI Creative Suite", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
             };
             Controls.Add(footer);
             Label help = NewLabel("There's issue? Contact VSI I.T", ClientSize.Width - 338, 16, 300, 32,
@@ -209,6 +239,7 @@ namespace VsiCreativeSuite
             help.TextAlign = ContentAlignment.MiddleRight;
             footer.Controls.Add(help);
 
+            Shown += delegate { if (modernWindows) SuiteUpdater.Check(this, false); };
             Resize += delegate { LayoutCards(); };
             Activated += delegate { RefreshCards(); };
             LayoutCards();
@@ -283,6 +314,11 @@ namespace VsiCreativeSuite
         private Rectangle CompanyLinkBounds()
         {
             return new Rectangle(40, 14, 234, 37);
+        }
+
+        private Rectangle UpdateLinkBounds()
+        {
+            return new Rectangle(288, 14, 188, 37);
         }
 
         private void LayoutCards()

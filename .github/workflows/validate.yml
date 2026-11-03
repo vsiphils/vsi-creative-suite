@@ -1,18 +1,44 @@
-name: Validate app catalog
+name: Validate catalog and compile launcher
 on:
   push:
     branches: [main]
-    paths: [catalog/**, scripts/validate-catalog.ps1, .github/workflows/validate.yml]
+    paths:
+      - 'catalog/**'
+      - 'scripts/validate-catalog.ps1'
+      - 'src/**'
+      - 'packaging/**'
+      - 'build.ps1'
+      - 'repack.ps1'
+      - 'tests/UpdaterTests.cs'
+      - '.github/workflows/validate.yml'
   pull_request:
-    paths: [catalog/**, scripts/validate-catalog.ps1, .github/workflows/validate.yml]
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  validate:
+  catalog:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate catalog schema and app definitions
+      - name: Validate catalog
         shell: pwsh
         run: ./scripts/validate-catalog.ps1
+  windows-compile-and-unit:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile Windows launcher
+        shell: pwsh
+        run: |
+          $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework\v4.0.30319\csc.exe'
+          if (!(Test-Path -LiteralPath $compiler)) { throw 'Missing .NET Framework C# compiler' }
+          & $compiler /nologo /target:winexe /platform:anycpu /optimize+ /codepage:65001 "/out:$env:RUNNER_TEMP\VsiCreativeSuite.exe" /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.Web.Extensions.dll src/Program.cs src/UpdateClient.cs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Compile updater unit tests
+        shell: pwsh
+        run: |
+          $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework\v4.0.30319\csc.exe'
+          & $compiler /nologo /target:exe /codepage:65001 "/out:$env:RUNNER_TEMP\UpdaterTests.exe" /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.Web.Extensions.dll src/UpdateClient.cs tests/UpdaterTests.cs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & "$env:RUNNER_TEMP\UpdaterTests.exe"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

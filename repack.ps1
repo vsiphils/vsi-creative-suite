@@ -1,4 +1,5 @@
 # Recompile updated VSI launcher and repack the last fully downloaded stage.
+# IMPORTANT: repack.ps1 does NOT fetch new upstream app versions. Use build.ps1 for a release update.
 # Run on the same Windows 10/11 x64 build PC. No internet/downloads required.
 param([switch]$BuildLegacyLauncher)
 Set-StrictMode -Version Latest
@@ -23,7 +24,7 @@ Copy-Item -LiteralPath (Join-Path $root 'THIRD_PARTY_NOTICES.txt') -Destination 
 $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework\v4.0.30319\csc.exe'
 if (!(Test-Path -LiteralPath $compiler)) { throw 'Missing .NET Framework 4 C# compiler.' }
 $icon = Join-Path $root 'assets\vsi-logo.ico'
-& $compiler /nologo /target:winexe /platform:anycpu /optimize+ /codepage:65001 ("/out:" + $launcherExe) ("/win32icon:" + $icon) /reference:System.Windows.Forms.dll /reference:System.Drawing.dll (Join-Path $root 'src\Program.cs')
+& $compiler /nologo /target:winexe /platform:anycpu /optimize+ /codepage:65001 ("/out:" + $launcherExe) ("/win32icon:" + $icon) /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.Web.Extensions.dll (Join-Path $root 'src\Program.cs') (Join-Path $root 'src\UpdateClient.cs')
 if ($LASTEXITCODE -ne 0 -or !(Test-Path -LiteralPath $launcherExe)) { throw 'Launcher compilation failed. No installer was built.' }
 
 $innoCandidates = @("$env:ProgramFiles\Inno Setup 7\ISCC.exe", "$([Environment]::GetFolderPath('ProgramFilesX86'))\Inno Setup 7\ISCC.exe", "$env:ProgramFiles\Inno Setup 6\ISCC.exe", "$([Environment]::GetFolderPath('ProgramFilesX86'))\Inno Setup 6\ISCC.exe")
@@ -38,4 +39,4 @@ if ($BuildLegacyLauncher)
     & $iscc "/DStageRoot=$stage" "/DProjectRoot=$root" "/O$out" (Join-Path $root 'packaging\VsiCreativeSuiteLegacy.iss')
     if ($LASTEXITCODE -ne 0) { throw 'Legacy launcher compilation failed.' }
 }
-Write-Host "Done. Updated VSI Creative Suite v0.2.1 installer in: $out"
+Write-Host "Done. Updated VSI Creative Suite v0.3.0 installer in: $out"

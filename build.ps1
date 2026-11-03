@@ -158,7 +158,7 @@ $compiler = Join-Path $env:WINDIR "Microsoft.NET\Framework\v4.0.30319\csc.exe"
 if (!(Test-Path -LiteralPath $compiler)) { throw "Missing .NET Framework C# compiler: $compiler" }
 $launcherExe = Join-Path (Join-Path $stage "launcher") "VsiCreativeSuite.exe"
 $iconPath = Join-Path $root "assets\vsi-logo.ico"
-& $compiler /nologo /target:winexe /platform:anycpu /optimize+ /codepage:65001 ("/out:" + $launcherExe) ("/win32icon:" + $iconPath) /reference:System.Windows.Forms.dll /reference:System.Drawing.dll (Join-Path $root "src\Program.cs")
+& $compiler /nologo /target:winexe /platform:anycpu /optimize+ /codepage:65001 ("/out:" + $launcherExe) ("/win32icon:" + $iconPath) /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.Web.Extensions.dll (Join-Path $root "src\Program.cs") (Join-Path $root "src\UpdateClient.cs")
 if ($LASTEXITCODE -ne 0 -or !(Test-Path -LiteralPath $launcherExe)) { throw "Launcher compilation failed." }
 
 $innoCandidates = @(

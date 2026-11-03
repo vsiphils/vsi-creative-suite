@@ -6,7 +6,7 @@
 [Setup]
 AppId={{A521ADE7-3C13-4C09-99A9-A053E62261D4}
 AppName=VSI Creative Suite (Legacy Launcher)
-AppVersion=0.2.1
+AppVersion=0.3.0
 AppPublisher=Vertical Space Interiors, Inc.
 DefaultDirName={localappdata}\Programs\VSI Creative Suite Legacy
 DefaultGroupName=VSI Creative Suite

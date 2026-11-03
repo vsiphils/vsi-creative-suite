@@ -21,7 +21,7 @@
 - [ ] Hew 3D OPEN launches and saves/reopens a local model.
 - [ ] Missing/corrupt binary disables its card instead of falsely showing Installed.
 - [ ] WebView2 installs offline if not preexisting; preexisting runtime is preserved.
-- [ ] Launcher has no network calls, login or telemetry.
+- [ ] Launcher makes only its optional official GitHub Releases update check (no login or telemetry); offline mode remains fully usable.
 - [ ] Start menu works, desktop shortcut appears only if selected.
 - [ ] Fresh install does not leave a second desktop shortcut called `Hew` (Hew remains installed and launchable inside VSI).
 - [ ] A pre-existing user-owned `Hew.lnk` shortcut remains untouched by installation.
@@ -45,5 +45,19 @@
 - [ ] Legacy launcher starts.
 - [ ] All six cards explicitly report Windows 10+ required and cannot launch.
 - [ ] No app bundles/unsupported executables are installed on legacy Windows.
+
+## Updater regression tests (v0.3.0+)
+
+- [ ] CI compiles both source files and passes updater metadata and SHA-256 unit tests.
+- [ ] Fresh v0.3.0 install has a visible CHECK FOR UPDATES button; manual click reports up-to-date when no newer stable release exists.
+- [ ] Startup GitHub API error, rate-limit, DNS failure and disconnected network do not interrupt using offline apps.
+- [ ] On a test newer stable release with the exact full offline installer asset and SHA256 digest, the launcher prompts Yes/No before downloading.
+- [ ] No leaves installed files untouched; Cancel aborts a partial download without running anything.
+- [ ] Yes downloads full installer with progress; size or checksum mismatch stops the installation.
+- [ ] Upgrade from v0.3.0 to a real newer test release preserves user documents and starts the interactive installer without silently closing running apps.
+- [ ] A bundled app updated in the full suite's release-lock.json actually reports/launches the new upstream version after install.
+- [ ] A newly packaged seventh app appears only after new launcher and full installer have been published.
+- [ ] Old release, draft/prerelease, unexpected download URL, missing digest, and missing installer asset are rejected.
+- [ ] Verify publisher identity with a trusted code-signing certificate or separately signed manifest before company rollout; SHA-256 alone is not enough.
 
 **Do not claim the full suite is production-ready until all applicable checks pass.**

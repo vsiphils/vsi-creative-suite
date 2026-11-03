@@ -6,8 +6,8 @@
 [Setup]
 AppId={{C5D51761-22C8-4B5F-A53A-9FC08C27F481}
 AppName=VSI Creative Suite
-AppVersion=0.2.1
-AppVerName=VSI Creative Suite 0.2.1
+AppVersion=0.3.0
+AppVerName=VSI Creative Suite 0.3.0
 AppPublisher=Vertical Space Interiors, Inc.
 AppPublisherURL=https://vsiphils.com/
 DefaultDirName={localappdata}\Programs\VSI Creative Suite
