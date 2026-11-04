@@ -100,6 +100,12 @@ This object is added inside the `apps` array. Keep `schemaVersion: 1`, and requi
 
 **Network and update behavior:** the installed creative apps still run offline. Updates need internet. Unauthenticated GitHub Releases API checks are subject to GitHub rate limits, especially on a shared office WAN IP; a future company-scale deployment should distribute a trusted cached update feed rather than having many desktops query every repository individually. The updater must never bypass TLS, SmartScreen or antivirus warnings. A user may decline all updates and continue using existing apps.
 
+## Windows release candidate build (GitHub Actions)
+
+The dedicated [package candidate workflow](.github/workflows/package-rc.yml) builds the **full offline installer** on a Windows runner from the official upstream packages, verifies recorded SHA-256 values, checks the reviewed seven-app catalog (including optional DeckCraft), and uploads an **unsigned, untested release candidate artifact**. It does not merge this PR or create a public stable GitHub Release. Download the candidate from the successful Actions run, manually test on an isolated Windows 10/11 workstation, and verify the installer and optional app updates before publishing. The artifact is not a substitute for code-signing or Windows acceptance.
+
+**Inno Setup commercial licensing:** the official [publisher's FAQ](https://jrsoftware.org/isorder.php) classifies company internal builds as commercial use and requests a license even for in-house installers, but states purchase is **not strictly required**. Its open software license permits commercial use. Respect the publisher's terms and consider purchasing before production distribution.
+
 ## How installation works on Windows 10/11
 
 - The installer copies the portable PdfCraft, PhotoCraft, GridCraft, WordCraft, and CADCraft apps into its own installation directory.

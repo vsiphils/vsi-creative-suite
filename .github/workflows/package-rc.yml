@@ -1,0 +1,67 @@
+name: Build offline installer release candidate (Windows x64)
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/package-rc.yml'
+      - 'src/**'
+      - 'catalog/**'
+      - 'assets/**'
+      - 'packaging/**'
+      - 'build.ps1'
+      - 'THIRD_PARTY_NOTICES.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-installer:
+    runs-on: windows-latest
+    timeout-minutes: 100
+    steps:
+      - name: Check out reviewed source
+        uses: actions/checkout@v4
+
+      - name: Check Inno Setup compiler
+        shell: pwsh
+        run: |
+          $roots = @($env:ProgramFiles, [Environment]::GetFolderPath('ProgramFilesX86'))
+          $candidates = foreach ($root in $roots) { foreach ($v in @('7','6')) { Join-Path $root "Inno Setup $v\ISCC.exe" } }
+          $compiler = $candidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+          if (!$compiler) {
+            choco install innosetup --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed.' }
+            $compiler = $candidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+          }
+          if (!$compiler) { throw 'ISCC.exe not found after installing Inno Setup.' }
+          Write-Host "Installer compiler available: $compiler"
+
+      - name: Download and verify official upstream packages, build VSI installer
+        shell: powershell
+        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
+
+      - name: Validate staged package and installer output
+        shell: pwsh
+        run: |
+          $bundle = Get-ChildItem -LiteralPath 'build' -Directory | Sort-Object Name -Descending | Select-Object -First 1
+          if (!$bundle) { throw 'No build directory was created.' }
+          $lock = Join-Path $bundle.FullName 'stage\release-lock.json'
+          $catalog = Join-Path $bundle.FullName 'stage\catalog\apps.json'
+          $list = @(Get-Content -LiteralPath $lock -Raw | ConvertFrom-Json)
+          $approved = Get-Content -LiteralPath $catalog -Raw | ConvertFrom-Json
+          if ($list.Count -lt 7) { throw 'Missing bundled application version locks.' }
+          if (@($approved.apps | Where-Object { $_.id -eq 'deckcraft' }).Count -ne 1) { throw 'DeckCraft optional catalog entry missing.' }
+          $installer = Get-ChildItem -LiteralPath 'output' -File -Filter 'VSI-Creative-Suite-Setup-Win10-11-x64.exe' | Select-Object -First 1
+          if (!$installer -or $installer.Length -lt 100MB) { throw 'Missing or unusually small full offline installer.' }
+          $hash = (Get-FileHash -LiteralPath $installer.FullName -Algorithm SHA256).Hash
+          Write-Host "RELEASE CANDIDATE ONLY: $($installer.Name), $($installer.Length) bytes, SHA256 $hash"
+
+      - name: Upload unsigned installer candidate for manual Windows QA
+        uses: actions/upload-artifact@v4
+        with:
+          name: VSI-Creative-Suite-v0.3.1-unsigned-RC
+          path: output/VSI-Creative-Suite-Setup-Win10-11-x64.exe
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
