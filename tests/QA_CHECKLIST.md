@@ -21,7 +21,7 @@
 - [ ] Hew 3D OPEN launches and saves/reopens a local model.
 - [ ] Missing/corrupt binary disables its card instead of falsely showing Installed.
 - [ ] WebView2 installs offline if not preexisting; preexisting runtime is preserved.
-- [ ] Launcher has no network calls, login or telemetry.
+- [ ] Launcher optionally checks only approved GitHub releases for the suite and installed/catalog apps (no login or telemetry); offline mode remains fully usable.
 - [ ] Start menu works, desktop shortcut appears only if selected.
 - [ ] Fresh install does not leave a second desktop shortcut called `Hew` (Hew remains installed and launchable inside VSI).
 - [ ] A pre-existing user-owned `Hew.lnk` shortcut remains untouched by installation.
@@ -46,4 +46,26 @@
 - [ ] All six cards explicitly report Windows 10+ required and cannot launch.
 - [ ] No app bundles/unsupported executables are installed on legacy Windows.
 
-**Do not claim the full suite is production-ready until all applicable checks pass.**
+## Updater regression tests (v0.3.1 candidate)
+
+- [ ] Windows CI compiles the three C# source files and passes suite, upstream app, catalog and ZIP safety unit tests.
+- [ ] Fresh install has **CHECK FOR UPDATES** and bundled six cards; detects a catalog-approved seventh tile online without silently installing anything.
+- [ ] If VSI has no published stable Release, the check still queries **individual app** releases (e.g. WordCraft v0.15.1 vs locally bundled v0.15.0).
+- [ ] A verified newer upstream app release appears with a checkbox **unchecked by default**; no downloads/installations occur before selection.
+- [ ] **Later** leaves every app and launcher untouched; **Clear** unchecks all; **Select all** checks all; **Install / Update** updates only checked apps.
+- [ ] Select only WordCraft: new WordCraft opens and reports latest version, while PdfCraft, PhotoCraft, GridCraft, CADCraft and Hew versions are unchanged.
+- [ ] Select two apps: both update; others remain unchanged. Updating a closed portable app does not erase documents stored elsewhere.
+- [ ] Run with a selected app still open: show a warning and do not replace its folder.
+- [ ] Update downloads validate exact GitHub-owned upstream release URL, reported SHA-256 digest, size and ZIP path safety. Reject malicious ZIP entry, invalid hash, unapproved owner, or bad release tag.
+- [ ] Cancel during download: no app files changed. Failure during installation restores the affected app directory; recovery backup is retained.
+- [ ] Hew installer update runs only after consent; new Hew desktop shortcut removed; a preexisting desktop shortcut preserved.
+- [ ] A new catalog app added in `main` shows **INSTALL** and an optional **NEW APP** checkbox after an online scan; unselected app stays absent.
+- [ ] After accepting install, the new approved app appears **Installed** and can be opened; works offline on subsequent launches.
+- [ ] Offline catalog fallback displays last approved cached entries, but never attempts an install without a verified download.
+- [ ] Suite full installer offer can be declined and still reach app-specific selection. Accepting the full installer displays the fact that it may replace all bundled apps.
+- [ ] A GitHub repository with no stable VSI suite Release is not misreported as a networking failure; network 403/500, DNS and rate limiting do not prevent offline app use.
+- [ ] Update check does not repeatedly offer a version just updated through the VSI updater (release-lock is maintained).
+- [ ] Test offline Windows 10/11, 100/150% DPI, standard user, low free disk space and antivirus interference.
+- [ ] Verify publisher identity with a trusted code-signing certificate or separately signed manifest before company rollout; SHA-256 alone is not enough.
+
+**Do not deploy company-wide until every applicable Windows acceptance test passes.**

@@ -6,8 +6,8 @@
 [Setup]
 AppId={{C5D51761-22C8-4B5F-A53A-9FC08C27F481}
 AppName=VSI Creative Suite
-AppVersion=0.2.1
-AppVerName=VSI Creative Suite 0.2.1
+AppVersion=0.3.1
+AppVerName=VSI Creative Suite 0.3.1
 AppPublisher=Vertical Space Interiors, Inc.
 AppPublisherURL=https://vsiphils.com/
 DefaultDirName={localappdata}\Programs\VSI Creative Suite
@@ -37,6 +37,7 @@ Source: "{#StageRoot}\launcher\VsiCreativeSuite.exe"; DestDir: "{app}"; Flags: i
 Source: "{#StageRoot}\launcher\vsi-logo.png"; DestDir: "{app}\assets"; Flags: ignoreversion
 Source: "{#StageRoot}\THIRD_PARTY_NOTICES.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StageRoot}\release-lock.json"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#StageRoot}\catalog\apps.json"; DestDir: "{app}\catalog"; Flags: ignoreversion
 Source: "{#StageRoot}\licenses\*"; DestDir: "{app}\licenses"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#StageRoot}\apps\*"; DestDir: "{app}\apps"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#StageRoot}\runtime\MicrosoftEdgeWebView2RuntimeInstallerX64.exe"; DestDir: "{app}\runtime"; Flags: deleteafterinstall

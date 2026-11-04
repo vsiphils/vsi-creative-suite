@@ -149,6 +149,8 @@ $webviewSha256 = (Get-FileHash -LiteralPath $webviewFile -Algorithm SHA256).Hash
 [void]$locked.Add([pscustomobject]@{ repository="Microsoft/WebView2"; version="Evergreen standalone"; asset="MicrosoftEdgeWebView2RuntimeInstallerX64.exe"; sha256=$webviewSha256 })
 
 Copy-Item -LiteralPath (Join-Path $root "assets\vsi-logo.png") -Destination (Join-Path $stage "launcher\vsi-logo.png")
+New-Item -ItemType Directory -Force -Path (Join-Path $stage "catalog") | Out-Null
+Copy-Item -LiteralPath (Join-Path $root "catalog\apps.json") -Destination (Join-Path $stage "catalog\apps.json") -Force
 Copy-Item -LiteralPath (Join-Path $root "THIRD_PARTY_NOTICES.txt") -Destination (Join-Path $stage "THIRD_PARTY_NOTICES.txt")
 ($locked | ConvertTo-Json -Depth 4) | Set-Content -LiteralPath (Join-Path $stage "release-lock.json") -Encoding UTF8
 
@@ -158,7 +160,7 @@ $compiler = Join-Path $env:WINDIR "Microsoft.NET\Framework\v4.0.30319\csc.exe"
 if (!(Test-Path -LiteralPath $compiler)) { throw "Missing .NET Framework C# compiler: $compiler" }
 $launcherExe = Join-Path (Join-Path $stage "launcher") "VsiCreativeSuite.exe"
 $iconPath = Join-Path $root "assets\vsi-logo.ico"
-& $compiler /nologo /target:winexe /platform:anycpu /optimize+ /codepage:65001 ("/out:" + $launcherExe) ("/win32icon:" + $iconPath) /reference:System.Windows.Forms.dll /reference:System.Drawing.dll (Join-Path $root "src\Program.cs")
+& $compiler /nologo /target:winexe /platform:anycpu /optimize+ /codepage:65001 ("/out:" + $launcherExe) ("/win32icon:" + $iconPath) /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.Web.Extensions.dll /reference:System.IO.Compression.dll (Join-Path $root "src\Program.cs") (Join-Path $root "src\UpdateClient.cs") (Join-Path $root "src\AppUpdateClient.cs")
 if ($LASTEXITCODE -ne 0 -or !(Test-Path -LiteralPath $launcherExe)) { throw "Launcher compilation failed." }
 
 $innoCandidates = @(

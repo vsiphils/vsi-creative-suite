@@ -32,21 +32,32 @@ CADCraft
   Source: https://github.com/storytold/cadcraft
   License: MIT OR Apache-2.0
 
+Optional, user-installed catalog application:
+
+DeckCraft
+  Source: https://github.com/storytold/deckcraft
+  License: MIT OR Apache-2.0
+  Delivery: Official upstream Windows x64 portable ZIP after user approval.
+
 Microsoft Edge WebView2 Runtime
   Publisher: Microsoft Corporation
   Information: https://developer.microsoft.com/en-us/microsoft-edge/webview2/
   Distributed under Microsoft's own license terms.
 
-The full upstream license texts and notices downloaded at BUILD time are
-included in the installed "licenses" folder. Review them before company
+Bundled upstream license texts and notices downloaded at BUILD time are
+included in the installed "licenses" folder. Optional catalog apps retain
+their independent upstream license requirements; review their license and
+notices before redistribution. Review them before company
 redistribution. The upstream ArtCraft name/logo are separate trademarks and
 have not been reused as VSI branding.
 
 The original product names (PdfCraft, PhotoCraft, GridCraft, WordCraft,
-CADCraft and Hew) identify their independent authors' software.
+CADCraft, DeckCraft and Hew) identify their independent authors' software.
 
-No login, user telemetry, GitHub release check, or network request is
-implemented in the custom VSI launcher itself.
+The custom VSI launcher has no required login or user telemetry. When online,
+its optional update feature requests approved GitHub catalog/release metadata
+and downloads verified official packages only after user approval.
+All already installed apps remain usable offline.
 
 An installed Hew application and the shared WebView2 Runtime are not removed
 when the VSI launcher is uninstalled, to avoid deleting separately installed
