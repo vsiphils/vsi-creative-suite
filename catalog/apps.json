@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "suiteVersion": "0.3.1",
+  "channel": "stable",
+  "apps": [
+    {
+      "id": "hew",
+      "name": "Hew 3D",
+      "description": "3D Modeling",
+      "executable": "hew.exe",
+      "symbol": "3D",
+      "accent": "#E64124",
+      "delivery": "bundled-installer",
+      "repository": "hew3d/hew",
+      "assetNameTemplate": "Hew_{version}_x64-setup.exe"
+    },
+    {
+      "id": "pdfcraft",
+      "name": "PdfCraft",
+      "description": "PDF Tools",
+      "executable": "pdfcraft.exe",
+      "symbol": "PDF",
+      "accent": "#008F81",
+      "delivery": "bundled-portable",
+      "repository": "storytold/pdfcraft",
+      "assetNameTemplate": "pdfcraft-{version}-windows-x64-portable.zip"
+    },
+    {
+      "id": "photocraft",
+      "name": "PhotoCraft",
+      "description": "Image Editing",
+      "executable": "photocraft.exe",
+      "symbol": "P",
+      "accent": "#0075C3",
+      "delivery": "bundled-portable",
+      "repository": "storytold/photocraft",
+      "assetNameTemplate": "photocraft-{version}-windows-x64-portable.zip"
+    },
+    {
+      "id": "gridcraft",
+      "name": "GridCraft",
+      "description": "Spreadsheets",
+      "executable": "gridcraft.exe",
+      "symbol": "X",
+      "accent": "#2B9C4C",
+      "delivery": "bundled-portable",
+      "repository": "storytold/gridcraft",
+      "assetNameTemplate": "gridcraft-{version}-windows-x64-portable.zip"
+    },
+    {
+      "id": "wordcraft",
+      "name": "WordCraft",
+      "description": "Documents",
+      "executable": "wordcraft.exe",
+      "symbol": "W",
+      "accent": "#2967CD",
+      "delivery": "bundled-portable",
+      "repository": "storytold/wordcraft",
+      "assetNameTemplate": "wordcraft-{version}-windows-x64-portable.zip"
+    },
+    {
+      "id": "deckcraft",
+      "name": "DeckCraft",
+      "description": "Presentations and Slides",
+      "executable": "deckcraft.exe",
+      "symbol": "D",
+      "accent": "#F07B23",
+      "delivery": "release-zip",
+      "repository": "storytold/deckcraft",
+      "assetNameTemplate": "deckcraft-{version}-windows-x64-portable.zip"
+    },
+    {
+      "id": "cadcraft",
+      "name": "CADCraft",
+      "description": "CAD Drafting",
+      "executable": "cadcraft.exe",
+      "symbol": "CAD",
+      "accent": "#8548D2",
+      "delivery": "bundled-portable",
+      "repository": "storytold/cadcraft",
+      "assetNameTemplate": "cadcraft-{version}-windows-x64-portable.zip"
+    }
+  ]
+}
