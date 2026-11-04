@@ -59,6 +59,17 @@
       "assetNameTemplate": "wordcraft-{version}-windows-x64-portable.zip"
     },
     {
+      "id": "deckcraft",
+      "name": "DeckCraft",
+      "description": "Presentations and Slides",
+      "executable": "deckcraft.exe",
+      "symbol": "D",
+      "accent": "#F07B23",
+      "delivery": "release-zip",
+      "repository": "storytold/deckcraft",
+      "assetNameTemplate": "deckcraft-{version}-windows-x64-portable.zip"
+    },
+    {
       "id": "cadcraft",
       "name": "CADCraft",
       "description": "CAD Drafting",
