@@ -1,36 +1,39 @@
-# VSI Creative Suite v0.3.0 update architecture (source candidate)
+# VSI Creative Suite v0.3.1 — optional launcher and app updates (test candidate)
 
-Status: v0.3.0 runtime updater has been added to source but not tested as a complete offline installer or deployed. Existing v0.2.1 installations cannot self-update. SHA-256 verification is implemented; publisher code-signing verification is still required for production.
+Status: source changes are on the draft PR. Windows GitHub Actions compiles the launcher and updater tests; **real Windows installer, update, rollback and offline acceptance tests are not yet complete**. Do not roll out company-wide.
 
-## User experience goal
+## What users see
 
-- When online, the launcher periodically checks a trusted, versioned GitHub Release published from vsiphils/vsi-creative-suite.
-- When a newer stable version exists, show a Yes/No prompt before downloading the full offline-capable installer; download with progress, verify size and SHA-256 digest, then launch the interactive installer. Never silently close an app containing unsaved user documents.
-- When offline, all already installed apps remain fully functional. No GitHub sign-in or network dependency for startup.
-- Newly introduced apps appear only after their installer/binaries pass validation and the suite update is installed; adding a Git commit or catalog entry alone will not install arbitrary code.
+- On startup and when **CHECK FOR UPDATES** is clicked, the launcher checks the official VSI public GitHub stable Releases for a **full suite/launcher** update.
+- If a newer full suite installer exists, users choose Yes/No. Yes downloads and verifies the complete installer; No continues with a separate **individual app** scan. A full suite installer may also replace the apps bundled into it.
+- The app scan reads the six approved upstream official GitHub stable releases; even if VSI itself has no new Release, individual WordCraft/PdfCraft/etc. updates can be offered.
+- A checkable list shows only confirmed newer app releases plus optional approved **NEW APP** entries. **Nothing is selected by default.** The user can **Select all**, **Clear**, **Install / Update**, or **Later**.
+- Only selected apps download. All apps remain locally runnable offline, and updates never run silently without confirmation.
+- If maintainers add an approved app in `main/catalog/apps.json`, a newly installed v0.3.1 launcher can show that app dynamically with an **INSTALL** action, without first rebuilding the launcher. This **does not automatically install** the new app. The new app requires an official semver stable release and matching Windows x64 portable ZIP with SHA-256 digest.
+- An approved catalog snapshot is cached for offline tile display.
 
-## Intended release workflow
+## Sources and trust
 
-1. Developer updates version and app catalog on a feature branch and provides vetted x64 payloads plus upstream attribution/licensing.
-2. Windows CI validates the catalog and compiles/tests the C# updater. It does not yet create, sign, scan, or publish the full suite installer.
-3. Maintainer publishes a signed, immutable stable GitHub Release after explicit manual QA. The Release includes full offline installer and a signed update manifest.
-4. Installed launchers only trust the pinned publisher signing certificate/public key; HTTPS and checksums are additional integrity measures, not substitutes for a trusted signer.
-5. Updater downloads to a per-user local update directory after consent and verifies size and SHA-256. It then launches the interactive installer and exits. Independent signing verification and installer rollback are still TODO.
-6. A new app requires an updated launcher definition, bundled executable and a full suite release. Local dynamic catalog rendering remains TODO.
+- Full suite/launcher release API: `https://api.github.com/repos/vsiphils/vsi-creative-suite/releases/latest`.
+- Reviewed app catalog: `https://raw.githubusercontent.com/vsiphils/vsi-creative-suite/main/catalog/apps.json`.
+- Per-app latest stable release: `https://api.github.com/repos/<APPROVED-OWNER>/<APPROVED-REPO>/releases/latest`.
+- Upstream asset URL must be exactly a GitHub `/releases/download/vX.Y.Z/<expected-asset>`; reported size and `sha256:` digest are mandatory. Downloaded bytes must match both.
+- ZIPs are extracted into a fresh app staging directory; reject traversal, absolute names, symlinks, too many entries and a cumulative uncompressed content ceiling before replacing an app.
+- Running apps are rejected for replacement. Previously installed portable-app directories are retained in `.vsi-backup-...` for recovery. On failure during an individual app replacement, the current affected app's previous folder is restored where possible; earlier successfully updated apps remain updated. Hew's native installer is independent and is not automatically rolled back.
+- No tokens are embedded in the installer. GitHub public API may rate-limit many PCs sharing the same office public IP.
+- GitHub SHA-256 verification detects package mismatch but is **not independent publisher identity verification**. Trusted publisher code signing or a separately signed update manifest, real offline/Win10/Win11 acceptance, recovery, endpoint AV/SmartScreen, and Inno commercial licensing review remain release blockers.
 
-## Security and operability requirements
+## Maintainer workflow
 
-- Do not run a PowerShell command fetched from the internet or execute unsigned code solely because a GitHub branch changed.
-- Do not treat GitHub public write access as evidence of code safety. Avoid floating assets, untrusted redirects, path traversal in ZIPs and downgrade/replay attacks.
-- No personal access tokens or GitHub secrets embedded in shipped binaries; public GitHub Releases require no auth.
-- Rate limit update checks, use timeout and exponential backoff. App works with blocked GitHub/network.
-- Installers should keep bundled app notices/licenses and provide paths to relevant upstream projects even when the launcher UI does not show a Credits button.
-- Test fresh Windows 10 and 11 x64 installs, upgrade from 0.2.1, standard-user/UAC, cancellation, rollback, forced offline, and newly added app payload end-to-end.
+1. Add or edit approved app metadata in `catalog/apps.json` on a reviewed pull request. New apps use `delivery: "release-zip"`, `repository`, `assetNameTemplate` and `executable`. Do not add untrusted publishers. Only approved `main` catalog changes reach installed clients.
+2. Run `scripts/validate-catalog.ps1`, then Windows CI compilation and unit tests.
+3. Rebuild full installer with `build.ps1` (fresh upstream bundle) or `repack.ps1` (last verified staged bundle, launcher-only source compilation). Confirm the package version matches `SuiteUpdater.CurrentVersion`, Inno version and catalog suite version.
+4. Manually test on clean Windows 10/11 (select one/two/none, download cancel, interrupted ZIP, Hew shortcut preservation, new app install, offline fallback, rollback, no administrative permissions). CI passing does **not** mean this has been done.
+5. Publish a vetted and signed stable VSI Release only after checks. A plain Git commit does not produce a full suite updater notification; catalog additions appear separately only if an official upstream release exists.
 
-## Implemented in this PR
+## Known limitations / next iteration
 
-- catalog/apps.json contains six installed applications; remote package fields are null until approved release artifacts exist.
-- scripts/validate-catalog.ps1 validates catalog schema, identifiers, versions, executable names, delivery types and package hash format.
-- Windows GitHub Actions checks the catalog on PRs and selected changes to main. It does not publish installers.
-- Runtime GitHub Releases check, Yes/No update prompt, download progress, size/SHA-256 checks, and starting the interactive full installer are implemented in src/UpdateClient.cs. Windows C# compile and updater metadata tests run on PRs.
-- Pending before production: genuine VSI code signing and signer verification, real upgrade/offline QA on Windows 10/11, rollback/recovery tests, scheduled upstream release monitoring, and dynamic app tiles for separately packaged apps.
+- Per-app latest checks query the unauthenticated GitHub API separately on each connected PC; aggregate office use may hit shared-IP rate limits. Implement a cached, independently signed manifest feed for large deployments.
+- The app version lock is updated when **VSI** updates an app. Apps that self-update independently can leave their VSI version lock behind until reconciled.
+- Rollback is per affected portable app, not a global atomic multi-app transaction; backups are preserved, not garbage-collected.
+- New app support is intentionally limited to approved official x64 portable ZIPs, not arbitrary scripts or installers.
