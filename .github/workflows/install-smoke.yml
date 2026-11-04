@@ -1,0 +1,91 @@
+name: Smoke test offline installer artifact
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/install-smoke.yml'
+  workflow_dispatch:
+    inputs:
+      artifact_run_id:
+        description: 'Successful Windows package-candidate run ID'
+        required: true
+        type: string
+        default: '41813460204'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  smoke:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download known candidate
+        uses: actions/download-artifact@v4
+        with:
+          name: VSI-Creative-Suite-v0.3.1-unsigned-RC
+          run-id: ${{ inputs.artifact_run_id || '41813460204' }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/vsi-candidate
+
+      - name: Verify candidate EXE SHA-256
+        shell: pwsh
+        run: |
+          $exe = Join-Path $env:RUNNER_TEMP 'vsi-candidate\VSI-Creative-Suite-Setup-Win10-11-x64.exe'
+          if (!(Test-Path -LiteralPath $exe)) { throw 'Candidate installer missing.' }
+          $expected = '6A63E1FC7CA5D9CAFC36FEA280AB07A8273FEFB8EE38E30A6A307C6BD9ED1192'
+          $actual = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash
+          if ($actual -ne $expected) { throw 'Candidate checksum mismatch.' }
+          Write-Host "Verified candidate installer SHA256: $actual"
+
+      - name: Install in an isolated temporary directory
+        shell: pwsh
+        timeout-minutes: 25
+        run: |
+          $exe = Join-Path $env:RUNNER_TEMP 'vsi-candidate\VSI-Creative-Suite-Setup-Win10-11-x64.exe'
+          $target = Join-Path $env:RUNNER_TEMP 'vsi-creative-suite-smoke'
+          $log = Join-Path $env:RUNNER_TEMP 'vsi-install.log'
+          if (Test-Path -LiteralPath $target) { throw 'Smoke test target unexpectedly exists; refusing overwrite.' }
+          $arguments = @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',('/DIR=' + $target),('/LOG=' + $log))
+          $process = Start-Process -FilePath $exe -ArgumentList $arguments -Wait -PassThru
+          if ($process.ExitCode -ne 0) { if (Test-Path -LiteralPath $log) { Get-Content -LiteralPath $log -Tail 70 | Write-Host }; throw "Installer exit code: $($process.ExitCode)" }
+
+      - name: Check installed launcher, bundled apps and optional DeckCraft catalog
+        shell: pwsh
+        run: |
+          $target = Join-Path $env:RUNNER_TEMP 'vsi-creative-suite-smoke'
+          foreach ($name in @('VsiCreativeSuite.exe','release-lock.json','catalog\apps.json')) { if (!(Test-Path -LiteralPath (Join-Path $target $name) -PathType Leaf)) { throw "Missing installed component: $name" } }
+          $catalog = Get-Content -LiteralPath (Join-Path $target 'catalog\apps.json') -Raw | ConvertFrom-Json
+          $deck = @($catalog.apps | Where-Object { $_.id -eq 'deckcraft' })
+          if ($deck.Count -ne 1 -or $deck[0].delivery -ne 'release-zip') { throw 'DeckCraft must be an approved optional release-zip app.' }
+          foreach ($id in @('pdfcraft','photocraft','gridcraft','wordcraft','cadcraft')) {
+            $directory = Join-Path $target ('apps\' + $id)
+            if (!(Test-Path -LiteralPath $directory -PathType Container)) { throw "Missing bundled app folder: $id" }
+            $candidate = Get-ChildItem -LiteralPath $directory -Filter ($id + '.exe') -Recurse -File | Select-Object -First 1
+            if (!$candidate) { throw "Missing bundled executable: $id" }
+          }
+          if (Test-Path -LiteralPath (Join-Path $target 'apps\deckcraft')) { throw 'DeckCraft was silently bundled; this is supposed to be optional.' }
+          Write-Host 'PASS: offline suite installed, five Craft executables present, DeckCraft metadata optional.'
+
+      - name: Uninstall test suite, preserving standalone upstream products
+        shell: pwsh
+        run: |
+          $target = Join-Path $env:RUNNER_TEMP 'vsi-creative-suite-smoke'
+          $uninstaller = Get-ChildItem -LiteralPath $target -Filter 'unins*.exe' -File | Select-Object -First 1
+          if (!$uninstaller) { throw 'Uninstaller missing.' }
+          $proc = Start-Process -FilePath $uninstaller.FullName -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART') -Wait -PassThru
+          if ($proc.ExitCode -ne 0) { throw "Uninstaller exit code: $($proc.ExitCode)" }
+          if (Test-Path -LiteralPath (Join-Path $target 'VsiCreativeSuite.exe')) { throw 'Launcher EXE remained after uninstall.' }
+          Write-Host 'PASS: VSI launcher uninstalled successfully from temporary test directory.'
+
+      - name: Upload installer log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vsi-install-smoke-log
+          path: ${{ runner.temp }}/vsi-install.log
+          if-no-files-found: ignore
+          retention-days: 7
