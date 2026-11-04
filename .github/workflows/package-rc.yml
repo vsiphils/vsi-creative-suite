@@ -23,6 +23,10 @@ jobs:
       - name: Check out reviewed source
         uses: actions/checkout@v4
 
+      - name: Validate approved app catalog
+        shell: pwsh
+        run: ./scripts/validate-catalog.ps1
+
       - name: Check Inno Setup compiler
         shell: pwsh
         run: |
