@@ -24,7 +24,7 @@ namespace VsiCreativeSuite
 
     internal static class SuiteUpdater
     {
-        public const string CurrentVersion = "0.3.0";
+        public const string CurrentVersion = "0.3.1";
         private const string ApiUrl = "https://api.github.com/repos/vsiphils/vsi-creative-suite/releases/latest";
         private const string AssetName = "VSI-Creative-Suite-Setup-Win10-11-x64.exe";
         private static readonly Version InstalledVersion = new Version(CurrentVersion);
@@ -51,15 +51,13 @@ namespace VsiCreativeSuite
                         MessageBox.Show(owner, "Could not check for updates.\n\n" + e.Error.Message +
                             "\n\nYour installed apps will continue to work offline.",
                             "VSI Creative Suite", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    AppUpdates.Check(owner, manual);
                     return;
                 }
                 UpdateRelease release = e.Result as UpdateRelease;
                 if (release == null)
                 {
-                    if (manual)
-                        MessageBox.Show(owner, "No newer stable release is published on GitHub.\n" +
-                            "Current version: v" + CurrentVersion + ".", "VSI Creative Suite",
-                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    AppUpdates.Check(owner, manual);
                     return;
                 }
                 DialogResult answer = MessageBox.Show(owner,
@@ -71,7 +69,12 @@ namespace VsiCreativeSuite
                     "VSI Creative Suite — Update Available",
                     MessageBoxButtons.YesNo, MessageBoxIcon.Question,
                     MessageBoxDefaultButton.Button2);
-                if (answer != DialogResult.Yes) return;
+                if (answer != DialogResult.Yes)
+                {
+                    // Declining the complete suite package must not hide selective app updates.
+                    AppUpdates.Check(owner, manual);
+                    return;
+                }
                 using (UpdateDownloadForm progress = new UpdateDownloadForm(release))
                 {
                     if (progress.ShowDialog(owner) != DialogResult.OK) return;
@@ -100,7 +103,7 @@ namespace VsiCreativeSuite
         {
             ServicePointManager.SecurityProtocol |= (SecurityProtocolType)3072; // TLS 1.2
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(ApiUrl);
-            request.UserAgent = "VSI-Creative-Suite-Updater/0.3.0";
+            request.UserAgent = "VSI-Creative-Suite-Updater/0.3.1";
             request.Accept = "application/vnd.github+json";
             request.Timeout = 12000;
             request.ReadWriteTimeout = 12000;
@@ -268,7 +271,7 @@ namespace VsiCreativeSuite
                 partialPath = Path.Combine(root, "VSI-Update-" + unique + ".partial");
                 VerifiedInstallerPath = Path.Combine(root, "VSI-Update-" + unique + ".exe");
                 client = new WebClient();
-                client.Headers.Add(HttpRequestHeader.UserAgent, "VSI-Creative-Suite-Updater/0.3.0");
+                client.Headers.Add(HttpRequestHeader.UserAgent, "VSI-Creative-Suite-Updater/0.3.1");
                 client.DownloadProgressChanged += delegate(object sender, DownloadProgressChangedEventArgs args)
                 {
                     progress.Value = Math.Max(0, Math.Min(100, args.ProgressPercentage));

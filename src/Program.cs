@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -41,7 +42,7 @@ namespace VsiCreativeSuite
     {
         private static readonly Color Background = Color.FromArgb(10, 13, 19);
         private static readonly Color Muted = Color.FromArgb(149, 157, 171);
-        private readonly SuiteApp[] apps = new SuiteApp[]
+        private readonly List<SuiteApp> apps = new List<SuiteApp>
         {
             new SuiteApp("hew", "Hew 3D", "3D Modeling", "hew.exe", "3D", Color.FromArgb(230, 65, 36)),
             new SuiteApp("pdfcraft", "PdfCraft", "PDF Tools", "pdfcraft.exe", "PDF", Color.FromArgb(0, 143, 129)),
@@ -51,7 +52,8 @@ namespace VsiCreativeSuite
             new SuiteApp("cadcraft", "CADCraft", "CAD Drafting", "cadcraft.exe", "CAD", Color.FromArgb(133, 72, 210))
         };
 
-        private readonly AppCard[] cards = new AppCard[6];
+        private readonly List<AppCard> cards = new List<AppCard>();
+        private readonly Panel cardHost = new Panel();
         private readonly Panel top = new Panel();
         private readonly Label heading = new Label();
         private readonly Label subheading = new Label();
@@ -160,10 +162,17 @@ namespace VsiCreativeSuite
             subheading.SetBounds(44, 215, 1030, 38);
             Controls.Add(subheading);
 
-            for (int i = 0; i < apps.Length; i++)
+            cardHost.SetBounds(43, 284, ClientSize.Width - 86, ClientSize.Height - 366);
+            cardHost.Anchor = AnchorStyles.Top | AnchorStyles.Bottom |
+                AnchorStyles.Left | AnchorStyles.Right;
+            cardHost.AutoScroll = true;
+            cardHost.BackColor = Background;
+            Controls.Add(cardHost);
+            for (int i = 0; i < apps.Count; i++)
             {
-                cards[i] = new AppCard(apps[i], modernWindows, FindExecutable, Launch);
-                Controls.Add(cards[i]);
+                AppCard card = new AppCard(apps[i], modernWindows, FindExecutable, Launch);
+                cards.Add(card);
+                cardHost.Controls.Add(card);
             }
 
             footer.Dock = DockStyle.Bottom;
@@ -324,22 +333,51 @@ namespace VsiCreativeSuite
         private void LayoutCards()
         {
             int gap = 18;
-            int margin = 43;
             int columns = 3;
-            int width = Math.Max(210, (ClientSize.Width - (margin * 2) - gap * 2) / columns);
-            int topY = 284;
-            int bottomSpace = footer.Height + 19;
-            int height = Math.Max(164, (ClientSize.Height - topY - bottomSpace - gap) / 2);
-            for (int i = 0; i < cards.Length; i++)
-            {
-                cards[i].SetBounds(margin + (i % 3) * (width + gap),
-                    topY + (i / 3) * (height + gap), width, height);
-            }
+            int rows = (cards.Count + columns - 1) / columns;
+            int scrollbar = rows > 2 ? SystemInformation.VerticalScrollBarWidth : 0;
+            int width = Math.Max(210, (cardHost.ClientSize.Width - gap * 2 - scrollbar - 2) / columns);
+            int height = Math.Max(164, (ClientSize.Height - 366 - gap) / 2);
+            for (int i = 0; i < cards.Count; i++)
+                cards[i].SetBounds((i % 3) * (width + gap),
+                    (i / 3) * (height + gap), width, height);
+            cardHost.AutoScrollMinSize = new Size(0,
+                rows > 2 ? rows * (height + gap) - gap : 0);
         }
 
         private void RefreshCards()
         {
-            for (int i = 0; i < cards.Length; i++) cards[i].RefreshState();
+            for (int i = 0; i < cards.Count; i++) cards[i].RefreshState();
+        }
+
+        internal void ApplyCatalog(List<ApprovedApp> catalog)
+        {
+            if (catalog == null || IsDisposed) return;
+            foreach (ApprovedApp item in catalog)
+            {
+                AppCard existing = null;
+                for (int i = 0; i < apps.Count; i++)
+                    if (apps[i].Id == item.Id) { existing = cards[i]; break; }
+                if (existing != null)
+                {
+                    existing.SetInstallable(true);
+                    continue;
+                }
+                try
+                {
+                    Color accent = ColorTranslator.FromHtml(item.Accent);
+                    SuiteApp app = new SuiteApp(item.Id, item.Name, item.Detail,
+                        item.Executable, item.Symbol, accent);
+                    AppCard card = new AppCard(app, modernWindows, FindExecutable, Launch);
+                    card.SetInstallable(true);
+                    apps.Add(app);
+                    cards.Add(card);
+                    cardHost.Controls.Add(card);
+                }
+                catch { /* Invalid optional catalog tile is ignored. */ }
+            }
+            LayoutCards();
+            RefreshCards();
         }
 
         private void OpenCompanyWebsite()
@@ -358,10 +396,15 @@ namespace VsiCreativeSuite
         private void Launch(SuiteApp app)
         {
             string executable = FindExecutable(app);
-            if (!modernWindows || executable == null)
+            if (!modernWindows)
             {
                 MessageBox.Show(this, "Application is unavailable on this PC.",
                     "VSI Creative Suite", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            if (executable == null)
+            {
+                AppUpdates.Check(this, true);
                 return;
             }
             try
@@ -458,6 +501,7 @@ namespace VsiCreativeSuite
         private readonly Func<SuiteApp, string> locate;
         private readonly Action<SuiteApp> launch;
         private bool available;
+        private bool installable;
         private bool hovering;
         private string statusText;
         private string buttonText;
@@ -482,6 +526,12 @@ namespace VsiCreativeSuite
             return new Rectangle(22, Height - 62, Math.Max(90, Width - 44), 43);
         }
 
+        public void SetInstallable(bool value)
+        {
+            installable = value;
+            RefreshState();
+        }
+
         public void RefreshState()
         {
             if (!supported)
@@ -493,18 +543,18 @@ namespace VsiCreativeSuite
             else
             {
                 available = locate(app) != null;
-                statusText = available ? "●  Installed   •   Offline" : "●  App missing";
-                buttonText = available ? "OPEN" : "MISSING";
+                statusText = available ? "●  Installed   •   Offline" :
+                    installable ? "●  Available to install" : "●  App missing";
+                buttonText = available ? "OPEN" : installable ? "INSTALL" : "MISSING";
             }
-            statusColor = available
-                ? Color.FromArgb(74, 218, 116)
-                : Color.FromArgb(226, 168, 91);
+            statusColor = available ? Color.FromArgb(74, 218, 116) :
+                installable ? Color.FromArgb(105, 188, 242) : Color.FromArgb(226, 168, 91);
             Invalidate();
         }
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
-            bool overButton = available && ButtonBounds().Contains(e.Location);
+            bool overButton = (available || installable) && ButtonBounds().Contains(e.Location);
             Cursor = overButton ? Cursors.Hand : Cursors.Default;
             if (overButton != hovering) { hovering = overButton; Invalidate(); }
             base.OnMouseMove(e);
@@ -520,13 +570,13 @@ namespace VsiCreativeSuite
         protected override void OnMouseClick(MouseEventArgs e)
         {
             base.OnMouseClick(e);
-            if (available && e.Button == MouseButtons.Left && ButtonBounds().Contains(e.Location))
+            if ((available || installable) && e.Button == MouseButtons.Left && ButtonBounds().Contains(e.Location))
                 launch(app);
         }
 
         protected override void OnKeyDown(KeyEventArgs e)
         {
-            if (available && (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Space))
+            if ((available || installable) && (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Space))
             {
                 launch(app);
                 e.Handled = true;
@@ -584,8 +634,8 @@ namespace VsiCreativeSuite
                     TextFormatFlags.Left | TextFormatFlags.VerticalCenter);
 
             Rectangle button = ButtonBounds();
-            Color first = available ? (hovering ? Color.FromArgb(250, 56, 31) : Color.FromArgb(231, 37, 30)) : Color.FromArgb(66, 73, 84);
-            Color last = available ? (hovering ? Color.FromArgb(255, 172, 45) : Color.FromArgb(252, 149, 27)) : Color.FromArgb(86, 92, 102);
+            Color first = (available || installable) ? (hovering ? Color.FromArgb(250, 56, 31) : Color.FromArgb(231, 37, 30)) : Color.FromArgb(66, 73, 84);
+            Color last = (available || installable) ? (hovering ? Color.FromArgb(255, 172, 45) : Color.FromArgb(252, 149, 27)) : Color.FromArgb(86, 92, 102);
             using (GraphicsPath shape = UiShapes.Rounded(button, 9))
             using (LinearGradientBrush fill = new LinearGradientBrush(button, first, last, 0f))
             {
@@ -594,7 +644,7 @@ namespace VsiCreativeSuite
             using (Font buttonFont = new Font("Segoe UI", 10f, FontStyle.Bold))
                 TextRenderer.DrawText(e.Graphics, buttonText ?? "OPEN", buttonFont, button,
                     Color.White, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
-            if (available)
+            if (available || installable)
             {
                 using (Pen arrow = new Pen(Color.White, 1.7f))
                 {

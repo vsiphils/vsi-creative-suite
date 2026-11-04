@@ -32,13 +32,13 @@ jobs:
         run: |
           $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework\v4.0.30319\csc.exe'
           if (!(Test-Path -LiteralPath $compiler)) { throw 'Missing .NET Framework C# compiler' }
-          & $compiler /nologo /target:winexe /platform:anycpu /optimize+ /codepage:65001 "/out:$env:RUNNER_TEMP\VsiCreativeSuite.exe" /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.Web.Extensions.dll (Join-Path $PWD 'src\Program.cs') (Join-Path $PWD 'src\UpdateClient.cs')
+          & $compiler /nologo /target:winexe /platform:anycpu /optimize+ /codepage:65001 "/out:$env:RUNNER_TEMP\VsiCreativeSuite.exe" /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.Web.Extensions.dll /reference:System.IO.Compression.dll (Join-Path $PWD 'src\Program.cs') (Join-Path $PWD 'src\UpdateClient.cs') (Join-Path $PWD 'src\AppUpdateClient.cs')
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Compile updater unit tests
         shell: pwsh
         run: |
           $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework\v4.0.30319\csc.exe'
-          & $compiler /nologo /target:exe /codepage:65001 "/out:$env:RUNNER_TEMP\UpdaterTests.exe" /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.Web.Extensions.dll (Join-Path $PWD 'src\UpdateClient.cs') (Join-Path $PWD 'tests\UpdaterTests.cs')
+          & $compiler /nologo /target:exe /main:VsiCreativeSuite.UpdaterTests /codepage:65001 "/out:$env:RUNNER_TEMP\UpdaterTests.exe" /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.Web.Extensions.dll /reference:System.IO.Compression.dll (Join-Path $PWD 'src\Program.cs') (Join-Path $PWD 'src\UpdateClient.cs') (Join-Path $PWD 'src\AppUpdateClient.cs') (Join-Path $PWD 'tests\UpdaterTests.cs')
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           & "$env:RUNNER_TEMP\UpdaterTests.exe"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
